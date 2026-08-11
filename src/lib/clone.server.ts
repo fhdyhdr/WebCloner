@@ -71,7 +71,7 @@ function rewriteHtmlUrls(html: string, base: string) {
           .split(",")
           .map((part) => {
             const [u, ...rest] = part.trim().split(/\s+/);
-            return [abs(u, base), ...rest].join(" ");
+            return [abs(u ?? "", base), ...rest].join(" ");
           })
           .join(", ");
         return ` ${attr}="${out}"`;
@@ -81,8 +81,8 @@ function rewriteHtmlUrls(html: string, base: string) {
   );
 }
 
-async function fetchText(url: string, signal?: AbortSignal) {
-  const res = await fetch(url, { headers: { "user-agent": UA, accept: "*/*" }, signal });
+async function fetchText(url: string) {
+  const res = await fetch(url, { headers: { "user-agent": UA, accept: "*/*" } });
   if (!res.ok) throw new Error(`HTTP ${res.status} saat mengambil ${url}`);
   return await res.text();
 }
