@@ -57,7 +57,10 @@ function Index() {
 
   const download = async () => {
     if (!result) return;
-    if (targets.length === 0) return toast.error("Pilih minimal satu format");
+    if (targets.length === 0) {
+      toast.error("Pilih minimal satu format");
+      return;
+    }
     setZipping(true);
     try {
       const blob = await buildZip(result, targets);
