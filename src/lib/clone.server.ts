@@ -7,45 +7,6 @@
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-export const GSAP_SNIPPET = `
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-<script>
-  window.addEventListener("DOMContentLoaded", function () {
-    if (!window.gsap) return;
-    gsap.registerPlugin(ScrollTrigger);
-    var blocks = document.querySelectorAll(
-      "body section, body header, body footer, body main > div, body article, body .clone-reveal"
-    );
-    blocks.forEach(function (el) {
-      gsap.from(el, {
-        opacity: 0,
-        y: 48,
-        duration: 0.9,
-        ease: "power3.out",
-        scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none reverse" },
-      });
-    });
-    document.querySelectorAll("h1, h2, h3").forEach(function (el) {
-      gsap.from(el, {
-        opacity: 0,
-        y: 24,
-        duration: 0.7,
-        ease: "power2.out",
-        scrollTrigger: { trigger: el, start: "top 90%" },
-      });
-    });
-    document.querySelectorAll("img").forEach(function (el) {
-      gsap.fromTo(
-        el,
-        { scale: 1.06 },
-        { scale: 1, duration: 1.2, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 95%" } }
-      );
-    });
-  });
-</script>
-`;
-
 function abs(url: string, base: string) {
   try {
     return new URL(url, base).toString();
