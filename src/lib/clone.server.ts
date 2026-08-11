@@ -87,6 +87,85 @@ async function fetchText(url: string) {
   return await res.text();
 }
 
+/** Follow one level of @import so component stylesheets aren't lost. */
+async function inlineCssImports(css: string, base: string) {
+  const importRe = /@import\s+(?:url\(\s*)?['"]?([^'")\s]+)['"]?\s*\)?[^;]*;/gi;
+  const found = [...css.matchAll(importRe)].slice(0, 15);
+  for (const m of found) {
+    const href = m[1];
+    if (!href || href.startsWith("data:")) continue;
+    const cssUrl = abs(href, base);
+    try {
+      const child = rewriteCss(await fetchText(cssUrl), cssUrl);
+      css = css.replace(m[0], `/* ${cssUrl} */\n${child}`);
+    } catch {
+      css = css.replace(m[0], "");
+    }
+  }
+  return css;
+}
+
+/**
+ * Many sites hide sections until their own JS runs (lazy images, AOS/WOW/
+ * ScrollReveal style classes, [hidden until scrolled] attributes). Since the
+ * original scripts are stripped, we materialise that content up-front.
+ */
+function unlazy(html: string) {
+  return (
+    html
+      // promote lazy image sources to real ones
+      .replace(
+        /<(img|iframe|source|video)\b([^>]*)>/gi,
+        (tag: string, name: string, attrs: string) => {
+          let a = attrs;
+          const pick = (re: RegExp) => a.match(re)?.[1];
+          const lazySrc =
+            pick(/\sdata-src\s*=\s*["']([^"']+)["']/i) ??
+            pick(/\sdata-lazy-src\s*=\s*["']([^"']+)["']/i) ??
+            pick(/\sdata-original\s*=\s*["']([^"']+)["']/i);
+          const lazySet =
+            pick(/\sdata-srcset\s*=\s*["']([^"']+)["']/i) ??
+            pick(/\sdata-lazy-srcset\s*=\s*["']([^"']+)["']/i);
+          if (lazySrc) {
+            a = /\ssrc\s*=/.test(a)
+              ? a.replace(/\ssrc\s*=\s*["'][^"']*["']/i, ` src="${lazySrc}"`)
+              : `${a} src="${lazySrc}"`;
+          }
+          if (lazySet) {
+            a = /\ssrcset\s*=/.test(a)
+              ? a.replace(/\ssrcset\s*=\s*["'][^"']*["']/i, ` srcset="${lazySet}"`)
+              : `${a} srcset="${lazySet}"`;
+          }
+          a = a.replace(/\sloading\s*=\s*["']lazy["']/i, "");
+          return `<${name}${a}>`;
+        },
+      )
+      // reveal-on-scroll markers that depend on the site's own JS
+      .replace(/\sdata-(aos|scroll|animate|reveal|sr-id)(-[a-z-]+)?\s*=\s*["'][^"']*["']/gi, "")
+      .replace(/\s(hidden|aria-hidden)\s*=\s*["'](true|hidden|)["']/gi, "")
+      // unwrap <noscript> fallbacks (usually the real <img>)
+      .replace(/<noscript[^>]*>([\s\S]*?)<\/noscript>/gi, "$1")
+  );
+}
+
+/** Neutralise "invisible until animated" states left behind by stripped JS. */
+const UNHIDE_CSS = `
+/* --- Site Cloner: reveal content that the original JS would have shown --- */
+[class*="aos"], [class*="animate"], [class*="reveal"], [class*="fade"],
+[class*="wow"], [class*="scroll-"], [class*="inview"], [class*="observe"],
+[data-animation], .lazy, .lazyload, .lazyloaded {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  clip-path: none !important;
+  animation: none !important;
+}
+html, body { overflow-x: hidden !important; height: auto !important; }
+body { opacity: 1 !important; visibility: visible !important; }
+[style*="opacity:0"], [style*="opacity: 0"] { opacity: 1 !important; }
+`;
+
+
 export async function cloneSite(rawUrl: string) {
   let target: URL;
   try {
