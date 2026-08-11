@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# Web Duplicator
+
+bisa tidak buatkan website untuk clone website lain, jadi tinggal input link nanti jadi web persis sampai animasi scroll triger gsap, tapi tanpa menggunakan model ai dan bisa preview dulu kemudian bisa download zip, nanti zipnya ada html css js, vite, dan next.js
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/bf207cdf-499a-4468-b554-58948871c4c1).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
