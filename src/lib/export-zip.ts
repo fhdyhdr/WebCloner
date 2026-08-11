@@ -1,6 +1,8 @@
 import JSZip from "jszip";
 import { SCROLL_JS } from "./gsap-layer";
 
+export type CloneScript = { src?: string; code?: string; module?: boolean };
+
 export type CloneResult = {
   url: string;
   title: string;
@@ -8,12 +10,28 @@ export type CloneResult = {
   bodyAttrs: string;
   css: string;
   assets: string[];
+  scripts?: CloneScript[];
   stylesheets: number;
 };
 
 export type Target = "static" | "vite" | "next";
 
 const esc = (s: string) => s.replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+
+/** Re-emit the original site scripts in document order. */
+function scriptTags(r: CloneResult) {
+  return (r.scripts ?? [])
+    .map((s) => {
+      const type = s.module ? ' type="module"' : "";
+      if (s.src) return `<script${type} src="${s.src}" crossorigin="anonymous"></script>`;
+      return `<script${type}>${(s.code ?? "").replace(/<\/script>/gi, "<\\/script>")}</script>`;
+    })
+    .join("\n");
+}
+
+const FALLBACK_TAGS = `<script>window.__cloneOriginalScripts = true;</script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>`;
 
 export function buildPreviewHtml(r: CloneResult) {
   return `<!doctype html>
@@ -27,8 +45,8 @@ export function buildPreviewHtml(r: CloneResult) {
 </head>
 <body${r.bodyAttrs}>
 ${r.body}
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+${scriptTags(r)}
+${FALLBACK_TAGS}
 <script>${SCROLL_JS}</script>
 </body>
 </html>`;
@@ -40,18 +58,20 @@ function staticHtml(r: CloneResult) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<base href="${r.url}" />
 <title>${r.title}</title>
 <meta name="description" content="Cloned from ${r.url}" />
 <link rel="stylesheet" href="./styles.css" />
 </head>
 <body${r.bodyAttrs}>
 ${r.body}
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+${scriptTags(r)}
+${FALLBACK_TAGS}
 <script src="./scroll.js"></script>
 </body>
 </html>`;
 }
+
 
 export async function buildZip(r: CloneResult, targets: Target[]) {
   const zip = new JSZip();
@@ -93,12 +113,15 @@ export async function buildZip(r: CloneResult, targets: Target[]) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<base href="${r.url}" />
 <title>${r.title}</title>
 <link rel="stylesheet" href="/src/styles.css" />
-<script type="module" src="/src/main.js"></script>
 </head>
 <body${r.bodyAttrs}>
 ${r.body}
+${scriptTags(r)}
+${FALLBACK_TAGS}
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>`,
     );
@@ -110,11 +133,12 @@ ${r.body}
 import ScrollTrigger from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
-window.gsap = gsap;
-window.ScrollTrigger = ScrollTrigger;
+window.gsap = window.gsap || gsap;
+window.ScrollTrigger = window.ScrollTrigger || ScrollTrigger;
 
 ${SCROLL_JS}
 `,
+
     );
   }
 
@@ -153,6 +177,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <base href=${JSON.stringify(r.url)} />
+      </head>
       <body>{children}</body>
     </html>
   );
@@ -161,59 +188,78 @@ export default function RootLayout({ children }) {
     );
     app.file(
       "page.jsx",
-      `import ScrollAnimations from "./ScrollAnimations";
+      `import OriginalScripts from "./OriginalScripts";
 
 const MARKUP = \`${esc(r.body)}\`;
 
 export default function Page() {
   return (
     <>
-      <ScrollAnimations />
       <div dangerouslySetInnerHTML={{ __html: MARKUP }} />
+      <OriginalScripts />
     </>
   );
 }
 `,
     );
     app.file(
-      "ScrollAnimations.jsx",
+      "scripts.json",
+      JSON.stringify(r.scripts ?? [], null, 2),
+    );
+    app.file(
+      "OriginalScripts.jsx",
       `"use client";
 
 import { useEffect } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import SCRIPTS from "./scripts.json";
 
-export default function ScrollAnimations() {
+// Loads the original site scripts (GSAP, ScrollTrigger, parallax, marquee,
+// SVG draw, …) in document order so the clone animates like the source.
+export default function OriginalScripts() {
   useEffect(() => {
+    let cancelled = false;
     gsap.registerPlugin(ScrollTrigger);
-    const ctx = gsap.context(() => {
-      document
-        .querySelectorAll("section, header, footer, article, .clone-reveal")
-        .forEach((el) => {
-          gsap.from(el, {
-            opacity: 0,
-            y: 48,
-            duration: 0.9,
-            ease: "power3.out",
-            scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none reverse" },
-          });
+    window.gsap = window.gsap || gsap;
+    window.ScrollTrigger = window.ScrollTrigger || ScrollTrigger;
+    window.__cloneOriginalScripts = true;
+
+    const added = [];
+    async function run() {
+      for (const s of SCRIPTS) {
+        if (cancelled) return;
+        await new Promise((resolve) => {
+          const el = document.createElement("script");
+          if (s.module) el.type = "module";
+          if (s.src) {
+            el.src = s.src;
+            el.crossOrigin = "anonymous";
+            el.onload = resolve;
+            el.onerror = resolve;
+          } else {
+            el.textContent = s.code || "";
+          }
+          document.body.appendChild(el);
+          added.push(el);
+          if (!s.src) resolve();
         });
-      document.querySelectorAll("h1, h2, h3").forEach((el) => {
-        gsap.from(el, {
-          opacity: 0,
-          y: 24,
-          duration: 0.7,
-          ease: "power2.out",
-          scrollTrigger: { trigger: el, start: "top 90%" },
-        });
-      });
-    });
-    return () => ctx.revert();
+      }
+      window.dispatchEvent(new Event("load"));
+      setTimeout(() => ScrollTrigger.refresh(), 1200);
+    }
+    run();
+
+    return () => {
+      cancelled = true;
+      added.forEach((el) => el.remove());
+    };
   }, []);
   return null;
 }
 `,
     );
+
   }
 
   return await zip.generateAsync({ type: "blob" });
