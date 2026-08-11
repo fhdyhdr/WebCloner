@@ -105,22 +105,24 @@ export async function cloneSite(rawUrl: string) {
   const linkRe = /<link\b[^>]*rel\s*=\s*['"]?stylesheet['"]?[^>]*>/gi;
   const links = html.match(linkRe) ?? [];
   const cssParts: string[] = [];
-  for (const tag of links.slice(0, 12)) {
+  for (const tag of links.slice(0, 20)) {
     const href = tag.match(/href\s*=\s*['"]([^'"]+)['"]/i)?.[1];
     if (!href) continue;
     const cssUrl = abs(href, base);
     try {
       const css = await fetchText(cssUrl);
-      cssParts.push(`/* ${cssUrl} */\n${rewriteCss(css, cssUrl)}`);
+      cssParts.push(`/* ${cssUrl} */\n${await inlineCssImports(rewriteCss(css, cssUrl), cssUrl)}`);
     } catch {
       /* skip unreachable stylesheet */
     }
   }
   // Inline <style> blocks
+  const inlineStyles: string[] = [];
   html = html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (_m, css: string) => {
-    cssParts.push(rewriteCss(css, base));
+    inlineStyles.push(rewriteCss(css, base));
     return "";
   });
+  for (const css of inlineStyles) cssParts.push(await inlineCssImports(css, base));
 
   html = html
     .replace(linkRe, "")
@@ -129,11 +131,13 @@ export async function cloneSite(rawUrl: string) {
     .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "");
 
   html = rewriteHtmlUrls(html, base);
+  html = unlazy(html);
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   const bodyAttrs = html.match(/<body([^>]*)>/i)?.[1] ?? "";
   const body = (bodyMatch?.[1] ?? html).trim();
-  const css = cssParts.join("\n\n");
+  const css = `${cssParts.join("\n\n")}\n\n${UNHIDE_CSS}`;
+
 
   const assets = Array.from(
     new Set(
