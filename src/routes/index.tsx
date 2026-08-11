@@ -128,8 +128,10 @@ function Index() {
               <div>
                 <h2 className="text-lg font-semibold">{result.title}</h2>
                 <p className="font-mono text-xs text-muted-foreground">
-                  {result.url} · {result.stylesheets} stylesheet · {result.assets.length} aset
+                  {result.url} · {result.stylesheets} stylesheet · {result.assets.length} aset ·{" "}
+                  {result.scripts?.length ?? 0} script asli
                 </p>
+
               </div>
               <div className="flex items-center gap-1 rounded-lg border border-border p-1">
                 <button
@@ -187,10 +189,11 @@ function Index() {
           </section>
         ) : (
           <p className="mt-12 max-w-xl font-mono text-xs leading-relaxed text-muted-foreground">
-            Catatan: kloning bersifat statis — markup, CSS, dan aset diambil apa adanya, sementara
-            skrip asli dilepas dan diganti layer animasi GSAP ScrollTrigger. Halaman yang seluruh
-            isinya dirender oleh JavaScript bisa tampil kosong.
+            Catatan: kloning bersifat statis, tapi skrip asli situs (GSAP, ScrollTrigger, parallax,
+            running text, SVG draw) ikut dipertahankan agar animasi scroll berjalan persis. Sisipan
+            GSAP bawaan hanya jadi cadangan bila situs tidak punya animasi sendiri.
           </p>
+
         )}
       </main>
     </div>

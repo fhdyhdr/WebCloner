@@ -1,6 +1,7 @@
 /**
- * Static site cloner: fetches a page, absolutizes URLs, inlines stylesheets,
- * strips original scripts and injects a GSAP ScrollTrigger reveal layer.
+ * Static site cloner: fetches a page, absolutizes URLs, inlines stylesheets and
+ * PRESERVES the original scripts (GSAP, ScrollTrigger, Lenis, marquee, SVG draw,
+ * parallax, …) so the cloned page animates exactly like the source.
  * No AI involved — pure fetch + rewrite.
  */
 
@@ -24,10 +25,10 @@ function rewriteCss(css: string, base: string) {
 
 function rewriteHtmlUrls(html: string, base: string) {
   return html.replace(
-    /\s(src|href|poster|data-src|srcset)\s*=\s*(['"])(.*?)\2/gi,
+    /\s(src|href|poster|data-src|data-srcset|srcset)\s*=\s*(['"])(.*?)\2/gi,
     (m, attr: string, q: string, val: string) => {
       if (/^(data:|https?:|mailto:|tel:|javascript:|#)/i.test(val.trim())) return m;
-      if (attr.toLowerCase() === "srcset") {
+      if (/srcset$/i.test(attr)) {
         const out = val
           .split(",")
           .map((part) => {
@@ -67,65 +68,58 @@ async function inlineCssImports(css: string, base: string) {
 }
 
 /**
- * Many sites hide sections until their own JS runs (lazy images, AOS/WOW/
- * ScrollReveal style classes, [hidden until scrolled] attributes). Since the
- * original scripts are stripped, we materialise that content up-front.
+ * Only promote lazy image sources — we no longer strip animation attributes,
+ * because the original scripts now run and need them.
  */
 function unlazy(html: string) {
-  return (
-    html
-      // promote lazy image sources to real ones
-      .replace(
-        /<(img|iframe|source|video)\b([^>]*)>/gi,
-        (tag: string, name: string, attrs: string) => {
-          let a = attrs;
-          const pick = (re: RegExp) => a.match(re)?.[1];
-          const lazySrc =
-            pick(/\sdata-src\s*=\s*["']([^"']+)["']/i) ??
-            pick(/\sdata-lazy-src\s*=\s*["']([^"']+)["']/i) ??
-            pick(/\sdata-original\s*=\s*["']([^"']+)["']/i);
-          const lazySet =
-            pick(/\sdata-srcset\s*=\s*["']([^"']+)["']/i) ??
-            pick(/\sdata-lazy-srcset\s*=\s*["']([^"']+)["']/i);
-          if (lazySrc) {
-            a = /\ssrc\s*=/.test(a)
-              ? a.replace(/\ssrc\s*=\s*["'][^"']*["']/i, ` src="${lazySrc}"`)
-              : `${a} src="${lazySrc}"`;
-          }
-          if (lazySet) {
-            a = /\ssrcset\s*=/.test(a)
-              ? a.replace(/\ssrcset\s*=\s*["'][^"']*["']/i, ` srcset="${lazySet}"`)
-              : `${a} srcset="${lazySet}"`;
-          }
-          a = a.replace(/\sloading\s*=\s*["']lazy["']/i, "");
-          return `<${name}${a}>`;
-        },
-      )
-      // reveal-on-scroll markers that depend on the site's own JS
-      .replace(/\sdata-(aos|scroll|animate|reveal|sr-id)(-[a-z-]+)?\s*=\s*["'][^"']*["']/gi, "")
-      .replace(/\s(hidden|aria-hidden)\s*=\s*["'](true|hidden|)["']/gi, "")
-      // unwrap <noscript> fallbacks (usually the real <img>)
-      .replace(/<noscript[^>]*>([\s\S]*?)<\/noscript>/gi, "$1")
+  return html.replace(
+    /<(img|iframe|source|video)\b([^>]*)>/gi,
+    (tag: string, name: string, attrs: string) => {
+      let a = attrs;
+      const pick = (re: RegExp) => a.match(re)?.[1];
+      const lazySrc =
+        pick(/\sdata-src\s*=\s*["']([^"']+)["']/i) ??
+        pick(/\sdata-lazy-src\s*=\s*["']([^"']+)["']/i) ??
+        pick(/\sdata-original\s*=\s*["']([^"']+)["']/i);
+      const lazySet =
+        pick(/\sdata-srcset\s*=\s*["']([^"']+)["']/i) ??
+        pick(/\sdata-lazy-srcset\s*=\s*["']([^"']+)["']/i);
+      if (lazySrc && !/\ssrc\s*=/.test(a)) a = `${a} src="${lazySrc}"`;
+      if (lazySet && !/\ssrcset\s*=/.test(a)) a = `${a} srcset="${lazySet}"`;
+      return `<${name}${a}>`;
+    },
   );
 }
 
-/** Neutralise "invisible until animated" states left behind by stripped JS. */
-const UNHIDE_CSS = `
-/* --- Site Cloner: reveal content that the original JS would have shown --- */
-[class*="aos"], [class*="animate"], [class*="reveal"], [class*="fade"],
-[class*="wow"], [class*="scroll-"], [class*="inview"], [class*="observe"],
-[data-animation], .lazy, .lazyload, .lazyloaded {
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  clip-path: none !important;
-  animation: none !important;
-}
-html, body { overflow-x: hidden !important; height: auto !important; }
-body { opacity: 1 !important; visibility: visible !important; }
-[style*="opacity:0"], [style*="opacity: 0"] { opacity: 1 !important; }
+/** Minimal hygiene only — never force-reveal, that would kill real animations. */
+const BASE_CSS = `
+/* --- Site Cloner --- */
+html, body { overflow-x: hidden !important; }
 `;
 
+export type CloneScript = { src?: string; code?: string; type?: string; module?: boolean };
+
+/** Extract every <script> in document order, keeping src and inline code. */
+function extractScripts(html: string) {
+  const scripts: CloneScript[] = [];
+  const out = html.replace(
+    /<script\b([^>]*)>([\s\S]*?)<\/script>|<script\b([^>]*)\/>/gi,
+    (_m, attrs = "", code = "", selfAttrs = "") => {
+      const a: string = attrs || selfAttrs || "";
+      const type = a.match(/\stype\s*=\s*["']([^"']+)["']/i)?.[1];
+      // keep JSON-LD / templates in place, they are not executable
+      if (type && !/^(module|text\/javascript|application\/javascript)$/i.test(type)) {
+        return _m;
+      }
+      const src = a.match(/\ssrc\s*=\s*["']([^"']+)["']/i)?.[1];
+      const module = /^module$/i.test(type ?? "") || /\stype\s*=\s*["']module["']/i.test(a);
+      if (src) scripts.push({ src, module });
+      else if (code.trim()) scripts.push({ code, module });
+      return "";
+    },
+  );
+  return { html: out, scripts };
+}
 
 export async function cloneSite(rawUrl: string) {
   let target: URL;
@@ -140,6 +134,9 @@ export async function cloneSite(rawUrl: string) {
   let html = await fetchText(base);
 
   const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? target.hostname).trim();
+
+  // Absolutize before anything else so script srcs are usable too
+  html = rewriteHtmlUrls(html, base);
 
   // Collect + inline external stylesheets
   const linkRe = /<link\b[^>]*rel\s*=\s*['"]?stylesheet['"]?[^>]*>/gi;
@@ -164,20 +161,26 @@ export async function cloneSite(rawUrl: string) {
   });
   for (const css of inlineStyles) cssParts.push(await inlineCssImports(css, base));
 
-  html = html
-    .replace(linkRe, "")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<script\b[^>]*\/>/gi, "")
-    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "");
+  html = html.replace(linkRe, "");
 
-  html = rewriteHtmlUrls(html, base);
-  html = unlazy(html);
+  // Keep the original scripts: that's what recreates the real animations.
+  const extracted = extractScripts(html);
+  html = unlazy(extracted.html);
+
+  // Inline same-page scripts as text where possible so they still work offline
+  const scripts: CloneScript[] = [];
+  for (const s of extracted.scripts.slice(0, 60)) {
+    if (s.src) {
+      scripts.push({ src: abs(s.src, base), module: !!s.module });
+    } else {
+      scripts.push(s);
+    }
+  }
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   const bodyAttrs = html.match(/<body([^>]*)>/i)?.[1] ?? "";
   const body = (bodyMatch?.[1] ?? html).trim();
-  const css = `${cssParts.join("\n\n")}\n\n${UNHIDE_CSS}`;
-
+  const css = `${cssParts.join("\n\n")}\n\n${BASE_CSS}`;
 
   const assets = Array.from(
     new Set(
@@ -185,5 +188,5 @@ export async function cloneSite(rawUrl: string) {
     ),
   );
 
-  return { url: base, title, body, bodyAttrs, css, assets, stylesheets: links.length };
+  return { url: base, title, body, bodyAttrs, css, assets, scripts, stylesheets: links.length };
 }
