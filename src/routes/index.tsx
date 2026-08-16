@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -20,7 +20,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Site Cloner — Clone Website Jadi Kode Siap Pakai" },
       {
         property: "og:description",
-        content: "Input link, preview, download ZIP: static HTML, Vite, dan Next.js dengan GSAP ScrollTrigger.",
+        content:
+          "Input link, preview, download ZIP: static HTML, Vite, dan Next.js dengan GSAP ScrollTrigger.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -34,6 +35,49 @@ const TARGETS: { id: Target; label: string; hint: string }[] = [
   { id: "vite", label: "Vite", hint: "npm run dev" },
   { id: "next", label: "Next.js", hint: "App Router" },
 ];
+
+/**
+ * Renders the clone inside an iframe with a REAL device viewport width
+ * (1440px desktop / 390px mobile) scaled down to fit the preview card.
+ * Without this, a narrow preview frame shrinks the layout below its native
+ * breakpoints — sections and cards end up cramped ("mepet").
+ */
+const DEVICE_WIDTHS = { desktop: 1440, mobile: 390 } as const;
+
+function DeviceFrame({ device, srcDoc }: { device: "desktop" | "mobile"; srcDoc: string }) {
+  const base = DEVICE_WIDTHS[device];
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setScale(Math.min(1, el.clientWidth / base));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [base]);
+
+  const heightVh = 70 / scale;
+
+  return (
+    <div ref={wrapRef} className="w-full" style={{ height: `${heightVh}vh` }}>
+      <iframe
+        title="Preview hasil kloning"
+        srcDoc={srcDoc}
+        sandbox="allow-same-origin allow-scripts"
+        className="rounded-xl bg-white"
+        style={{
+          width: base,
+          height: `${heightVh}vh`,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      />
+    </div>
+  );
+}
 
 function Index() {
   const [url, setUrl] = useState("");
@@ -131,35 +175,32 @@ function Index() {
                   {result.url} · {result.stylesheets} stylesheet · {result.assets.length} aset ·{" "}
                   {result.scripts?.length ?? 0} script asli
                 </p>
-
               </div>
-              <div className="flex items-center gap-1 rounded-lg border border-border p-1">
-                <button
-                  onClick={() => setDevice("desktop")}
-                  aria-label="Preview desktop"
-                  className={`rounded-md p-2 ${device === "desktop" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
-                >
-                  <Monitor className="size-4" />
-                </button>
-                <button
-                  onClick={() => setDevice("mobile")}
-                  aria-label="Preview mobile"
-                  className={`rounded-md p-2 ${device === "mobile" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
-                >
-                  <Smartphone className="size-4" />
-                </button>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-xs text-muted-foreground">
+                  {DEVICE_WIDTHS[device]}px
+                </span>
+                <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+                  <button
+                    onClick={() => setDevice("desktop")}
+                    aria-label="Preview desktop"
+                    className={`rounded-md p-2 ${device === "desktop" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
+                  >
+                    <Monitor className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => setDevice("mobile")}
+                    aria-label="Preview mobile"
+                    className={`rounded-md p-2 ${device === "mobile" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
+                  >
+                    <Smartphone className="size-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-card p-3">
-              <div className={device === "mobile" ? "mx-auto w-[390px] max-w-full" : "w-full"}>
-                <iframe
-                  title="Preview hasil kloning"
-                  srcDoc={buildPreviewHtml(result)}
-                  sandbox="allow-same-origin allow-scripts"
-                  className="h-[70vh] w-full rounded-xl bg-white"
-                />
-              </div>
+              <DeviceFrame device={device} srcDoc={buildPreviewHtml(result)} />
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -183,7 +224,11 @@ function Index() {
               disabled={zipping}
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              {zipping ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+              {zipping ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
               Download ZIP
             </button>
           </section>
@@ -193,7 +238,6 @@ function Index() {
             running text, SVG draw) ikut dipertahankan agar animasi scroll berjalan persis. Sisipan
             GSAP bawaan hanya jadi cadangan bila situs tidak punya animasi sendiri.
           </p>
-
         )}
       </main>
     </div>
