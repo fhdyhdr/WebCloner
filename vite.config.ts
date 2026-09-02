@@ -219,5 +219,11 @@ export default defineConfig({
   },
   vite: {
     plugins: [cloneNextAssetProxy()],
+    // Favicon configuration
+    resolve: {
+      alias: {
+        '@icon': '/favicon.ico',
+      },
+    },
   },
 });
