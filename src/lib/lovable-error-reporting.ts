@@ -12,32 +12,39 @@ type LovableEvents = {
   ) => void;
 };
 
+type LovableRuntimeError = {
+  message: string;
+  stack?: string;
+  filename?: string;
+};
+
 declare global {
   interface Window {
     __lovableEvents?: LovableEvents;
-    __lovableReportRuntimeError?: (payload: {
-      message: string;
-      stack?: string;
-      filename?: string;
-    }) => void;
+    __lovableReportRuntimeError?: (payload: LovableRuntimeError) => void;
   }
 }
 
 export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
-  window.__lovableEvents?.captureException?.(
-    error,
-    {
-      source: "react_error_boundary",
-      route: window.location.pathname,
-      ...context,
-    },
-    {
-      mechanism: "react_error_boundary",
-      handled: false,
-      severity: "error",
-    },
-  );
+  try {
+    window.__lovableEvents?.captureException?.(
+      error,
+      {
+        source: "react_error_boundary",
+        route: window.location.pathname,
+        ...context,
+      },
+      {
+        mechanism: "react_error_boundary",
+        handled: false,
+        severity: "error",
+      },
+    );
+  } catch (e) {
+    // Silent fail if Lovable events not available
+  }
+  
   // Prod React does not rethrow boundary-caught errors to window.onerror, so the
   // editor's telemetry never sees them. Forward to lovable.js's reporting hook,
   // which is present only inside the editor preview.
@@ -50,9 +57,14 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
         ? error.message
         : String(error);
   const stack = error instanceof Error ? error.stack : undefined;
-  window.__lovableReportRuntimeError?.({
-    message,
-    ...(stack !== undefined && { stack }),
-    filename: window.location.pathname,
-  });
+  
+  try {
+    window.__lovableReportRuntimeError?.({
+      message,
+      ...(stack !== undefined && { stack }),
+      filename: window.location.pathname,
+    });
+  } catch (e) {
+    // Silent fail if Lovable reporting not available
+  }
 }
