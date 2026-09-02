@@ -1,0 +1,183 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e18]:
+        - generic [ref=e22]: Berhasil mengkloning www.cosmos.so
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: tanpa AI · murni fetch & rewrite
+      - heading "Clone website jadi kode siap pakai" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Tempel link, lihat preview dengan animasi scroll GSAP ScrollTrigger, lalu unduh ZIP berisi versi HTML/CSS/JS, Vite, dan Next.js.
+    - generic [ref=e10]:
+      - textbox "https://contoh-website.com" [ref=e15]: https://www.cosmos.so/
+      - button "Clone sekarang" [ref=e16]
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - heading "Cosmos" [level=2] [ref=e27]
+          - paragraph [ref=e28]: https://www.cosmos.so/ · 2 stylesheet · 37 aset · 73 script asli
+        - generic [ref=e29]:
+          - generic [ref=e30]: 1440px
+          - generic [ref=e31]:
+            - button "Preview desktop" [ref=e32]
+            - button "Preview mobile" [ref=e35]
+      - iframe [ref=e40]:
+        - generic [ref=f1e1]:
+          - banner:
+            - generic [ref=f1e2]:
+              - link [ref=f1e3] [cursor=pointer]:
+                - /url: https://www.cosmos.so/
+                - img "Cosmos" [ref=f1e4]
+              - generic [ref=f1e11]:
+                - link "Explore" [ref=f1e12] [cursor=pointer]:
+                  - /url: https://www.cosmos.so/explore
+                - link "Sequence" [ref=f1e14] [cursor=pointer]:
+                  - /url: https://www.cosmos.so/sequence
+                - link "Careers" [ref=f1e16] [cursor=pointer]:
+                  - /url: https://www.cosmos.so/careers
+            - generic [ref=f1e18]:
+              - combobox [ref=f1e19]:
+                - generic [ref=f1e24]:
+                  - combobox [ref=f1e25]
+                  - generic:
+                    - generic:
+                      - generic: Try
+                      - generic: "'vitsoe shelving'"
+                - generic [ref=f1e26]:
+                  - button [ref=f1e27] [cursor=pointer]
+                  - button [ref=f1e32] [cursor=pointer]
+              - textbox [ref=f1e43]
+            - generic [ref=f1e45]:
+              - link "Log in" [ref=f1e46] [cursor=pointer]:
+                - /url: https://www.cosmos.so/login
+              - link "Sign up" [ref=f1e47] [cursor=pointer]:
+                - /url: https://www.cosmos.so/start
+          - generic [ref=f1e48]:
+            - generic [ref=f1e49]:
+              - generic [ref=f1e52]:
+                - heading "Your space for inspiration" [level=1] [ref=f1e60]: Your spacefor inspiration
+                - generic [ref=f1e62]:
+                  - link "Sign up" [ref=f1e63] [cursor=pointer]:
+                    - /url: https://www.cosmos.so/start
+                  - button "Get the app" [ref=f1e64] [cursor=pointer]
+              - generic [ref=f1e65]:
+                - generic:
+                  - generic:
+                    - button [ref=f1e66] [cursor=pointer]:
+                      - paragraph [ref=f1e69]: Watch our new film (ft. Odessa A’zion)
+                    - generic [ref=f1e70] [cursor=pointer]
+            - generic [ref=f1e73]:
+              - heading "Every search opens a new world." [level=2] [ref=f1e74]:
+                - generic [ref=f1e75]: Every
+                - generic [ref=f1e77]: search
+                - generic [ref=f1e79]: opens
+                - generic [ref=f1e81]: a
+                - generic [ref=f1e83]: new
+                - generic [ref=f1e85]: world.
+              - generic [ref=f1e87]: future home
+              - paragraph [ref=f1e104]:
+                - generic [ref=f1e105]: Your
+                - generic [ref=f1e107]: collections,
+                - generic [ref=f1e109]: your
+                - generic [ref=f1e111]: references,
+                - generic [ref=f1e113]: your
+                - generic [ref=f1e115]: taste.
+                - generic [ref=f1e117]: Connected,
+                - generic [ref=f1e119]: searchable,
+                - generic [ref=f1e121]: yours.
+            - generic [ref=f1e123]:
+              - heading "Search the way you think." [level=2] [ref=f1e124]:
+                - generic [ref=f1e125]: Search
+                - generic [ref=f1e127]: the
+                - generic [ref=f1e129]: way
+                - generic [ref=f1e131]: you
+                - generic [ref=f1e133]: think.
+              - generic [ref=f1e135]:
+                - generic [ref=f1e136]:
+                  - generic [ref=f1e137]: "#bc361b"
+                  - paragraph [ref=f1e147]: By color
+                - paragraph [ref=f1e157]: by visual similarity
+                - generic [ref=f1e158]:
+                  - generic [ref=f1e162]:
+                    - generic [ref=f1e163]:
+                      - generic [ref=f1e164]: AI content
+                      - generic [ref=f1e165]: Content detected as likely generated by AI
+                    - generic:
+                      - tablist:
+                        - tab "Show" [selected]
+                        - tab "Blur"
+                        - tab "Hide"
+                  - paragraph [ref=f1e166]: and without AI.
+            - generic [ref=f1e167]:
+              - heading "Know what you’re looking at." [level=2] [ref=f1e169]:
+                - generic [ref=f1e170]: Know
+                - generic [ref=f1e172]: what
+                - generic [ref=f1e174]: you’re
+                - generic [ref=f1e176]: looking
+                - generic [ref=f1e178]: at.
+              - generic [ref=f1e180]:
+                - generic [ref=f1e184]:
+                  - paragraph [ref=f1e185]: Editorial photography by
+                  - paragraph [ref=f1e186]: Guiri
+                - generic [ref=f1e190]:
+                  - paragraph [ref=f1e191]: Photograph from Unformen der Kunst
+                  - paragraph [ref=f1e192]: Karl Blossfeldt
+                - generic [ref=f1e196]:
+                  - paragraph [ref=f1e197]: The OOAA Arquitectura Studio. Designed by
+                  - paragraph [ref=f1e198]: Iker Ochotorena
+              - paragraph [ref=f1e200]:
+                - generic [ref=f1e201]: Cosmos
+                - generic [ref=f1e203]: researches
+                - generic [ref=f1e205]: images—surfacing
+                - generic [ref=f1e207]: the
+                - generic [ref=f1e209]: artist,
+                - generic [ref=f1e211]: source,
+                - generic [ref=f1e213]: and
+                - generic [ref=f1e215]: story.
+            - heading "Inspiration for the world’s top creative teams." [level=2] [ref=f1e218]:
+              - generic [ref=f1e219]: Inspiration
+              - generic [ref=f1e221]: for
+              - generic [ref=f1e223]: the
+              - generic [ref=f1e225]: world’s
+              - generic [ref=f1e227]: top
+              - generic [ref=f1e229]: creative
+              - generic [ref=f1e231]: teams.
+            - generic [ref=f1e340]:
+              - generic [ref=f1e341]:
+                - paragraph [ref=f1e342]:
+                  - generic [ref=f1e343]: Dream
+                  - generic [ref=f1e345]: with
+                  - generic [ref=f1e347]: us.
+                - generic [ref=f1e349]:
+                  - link "Sign up for Cosmos" [ref=f1e350] [cursor=pointer]:
+                    - /url: https://www.cosmos.so/start
+                  - button "Download the app" [ref=f1e351] [cursor=pointer]
+              - contentinfo [ref=f1e352]:
+                - generic [ref=f1e353]:
+                  - generic [ref=f1e354]:
+                    - link "Instagram" [ref=f1e355] [cursor=pointer]:
+                      - /url: https://www.instagram.com/cosmos/
+                    - link "TikTok" [ref=f1e356] [cursor=pointer]:
+                      - /url: https://www.tiktok.com/@inspirethecosmos
+                    - link "X" [ref=f1e357] [cursor=pointer]:
+                      - /url: https://x.com/thecosmos
+                    - link "Substack" [ref=f1e358] [cursor=pointer]:
+                      - /url: https://sequencebycosmos.substack.com/
+                  - generic [ref=f1e362]:
+                    - link "Careers" [ref=f1e363] [cursor=pointer]:
+                      - /url: https://www.cosmos.so/careers
+                    - link "Terms" [ref=f1e364] [cursor=pointer]:
+                      - /url: https://www.cosmos.so/legal/terms-conditions
+                    - link "Privacy" [ref=f1e365] [cursor=pointer]:
+                      - /url: https://www.cosmos.so/legal/privacy-policy
+      - generic [ref=e41]:
+        - button [ref=e42]:
+          - paragraph [ref=e43]: HTML / CSS / JS
+          - paragraph [ref=e44]: Buka langsung di browser
+        - button [ref=e45]:
+          - paragraph [ref=e46]: Vite
+          - paragraph [ref=e47]: npm run dev
+        - button [ref=e48]:
+          - paragraph [ref=e49]: Next.js
+          - paragraph [ref=e50]: App Router
+      - button "Download ZIP" [ref=e51]

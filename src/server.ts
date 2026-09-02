@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { getPreviewHtml } from "./lib/clone.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -44,9 +45,28 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+/**
+ * The preview iframe loads the clone at "/?preview=<id>". Framework SPAs (Nuxt,
+ * …) normalize their URL to the canonical home path on hydration — served at
+ * /api/preview/<id> they hit a route mismatch and navigate away to an error
+ * page. Serving the clone HTML at the root path keeps the SPA on its home
+ * route. The cloner UI itself never uses that query, so "/" is unaffected.
+ */
+function previewIframeResponse(request: Request): Response | null {
+  const url = new URL(request.url);
+  if (url.pathname !== "/") return null;
+  const id = url.searchParams.get("preview");
+  if (!id) return null;
+  const html = getPreviewHtml(id);
+  if (!html) return new Response("Preview not found", { status: 404 });
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const preview = previewIframeResponse(request);
+      if (preview) return preview;
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
