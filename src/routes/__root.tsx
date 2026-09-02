@@ -8,7 +8,6 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { type ReactNode } from "react";
-
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -34,7 +33,7 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  console.error("Error boundary:", error);
   const router = useRouter();
 
   return (
