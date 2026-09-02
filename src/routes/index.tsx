@@ -18,13 +18,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Site Cloner — Clone Website ke HTML, Vite & Next.js" },
+      { title: "WebCloner" },
       {
         name: "description",
         content:
           "Tempel link website, lihat preview hasil kloning dengan animasi scroll GSAP, lalu unduh ZIP berisi versi HTML/CSS/JS, Vite, dan Next.js.",
       },
-      { property: "og:title", content: "Site Cloner — Clone Website Jadi Kode Siap Pakai" },
+      { property: "og:title", content: "WebCloner" },
       {
         property: "og:description",
         content:

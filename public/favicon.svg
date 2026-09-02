@@ -1,0 +1,6 @@
+<!-- SVG favicon untuk WebCloner -->
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="6" fill="#2563eb"/>
+  <path d="M9 16H23M9 16L15 10M9 16L15 22M23 16L17 10M23 16L17 22" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="11" y="12" width="10" height="8" rx="1.5" stroke="white" stroke-width="1.5"/>
+</svg>
