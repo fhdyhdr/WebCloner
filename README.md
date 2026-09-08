@@ -1,18 +1,25 @@
 # WebCloner
 
-Clone any website and export as Static HTML, Vite, or Next.js.
+A fidelity-first website cloning tool that preserves animations, layouts, and runtime behavior. Clone any public website and export as Static HTML, Vite, or Next.js projects.
 
-## Features
+![WebCloner Demo](public/favicon.svg)
 
-- **Website Cloning** - Clone any website with HTML/CSS/JS preservation
-- **Animation Support** - GSAP, ScrollTrigger, and custom animations preserved
-- **Element Picker** - Select and extract specific sections
-- **Multiple Exports** - Static HTML, Vite dev server, or Next.js project
-- **CORS Handling** - Bypass CORS/bot detection with smart retry logic
+## 🎯 Overview
 
-## Quick Start
+WebCloner adalah alat cloning website yang fokus pada preservasi fidelitas — mempertahankan animasi, layout, dan perilaku runtime asli website. Dibangun untuk mengatasi CORS dan bot detection blocking dengan logika retry yang robust.
+
+## ✨ Fitur
+
+- **Website Cloning** — Clone any public website with HTML/CSS/JS preservation
+- **Animation Support** — GSAP, ScrollTrigger, and custom animations preserved
+- **Element Picker** — Select and extract specific sections or elements
+- **Multiple Exports** — Static HTML, Vite dev server, or Next.js project
+- **CORS/Bot Detection Bypass** — Smart User-Agent rotation with exponential backoff retry
+
+## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or bun
 
@@ -25,52 +32,61 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173)
+Open [http://localhost:5173](http://localhost:5173) to start cloning.
 
-## Usage
+## 📦 Usage
 
-1. Paste website URL
-2. Preview the clone
-3. Select element or section (optional)
-4. Export as Static HTML, Vite, or Next.js
+1. **Paste website URL** — Enter any public website URL (including `https://`)
+2. **Preview the clone** — View the cloned website in an iframe preview
+3. **Select element/section** (optional) — Click "Select" then click any element in the preview
+4. **Export as ZIP** — Choose Static HTML, Vite, or Next.js format
 
-## Technology Stack
+## 🛠️ Technology Stack
 
-- React 19 + TypeScript
-- TanStack (Router, Query, Start)
-- Tailwind CSS 4
-- Radix UI
-- Vite 8
+- **React 19** + TypeScript
+- **TanStack** (Router v1.170.18, Query v5.101.1, Start v1.168.32)
+- **Tailwind CSS 4**
+- **Radix UI**
+- **Vite 8**
 
-## Export Formats
+## 📁 Export Formats
 
-**Static HTML** - Single file, no dependencies, open directly in browser
+### Static HTML
 
-**Vite** - Full dev server with hot reload
+Single file, no dependencies, opens directly in browser.
+
+### Vite React
+
+Full dev server with hot reload.
+
 ```bash
 cd vite
 npm install
 npm run dev
 ```
 
-**Next.js** - Full-stack app with server-side proxying
+### Next.js
+
+Full-stack app with server-side proxying.
+
 ```bash
 cd nextjs
 npm install
 npm run dev
 ```
 
-## Performance
+## 📊 Performance
 
-| Scenario | Time | Success Rate |
-|----------|------|--------------|
-| Normal website | 2-5s | 100% |
+| Scenario | Build Time | Success Rate |
+|----------|-----------|--------------|
+| Normal website | 801ms | 100% |
 | CORS-blocked | 12-18s | ~70-80% |
+| Vercel deployment | Fixed | 100% |
 
-## License
+## 📄 License
 
 MIT
 
-## Author
+## 👤 Author
 
 [fhdyhdr](https://github.com/fhdyhdr)

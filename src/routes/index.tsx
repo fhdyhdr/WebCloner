@@ -1,19 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { Download, Globe, Loader2, Monitor, Rows3, Scissors, Smartphone, Zap } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Code2,
+  Download,
+  ExternalLink,
+  LoaderCircle,
+  MousePointer2,
+  RefreshCw,
+  ScanSearch,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { clonePage } from "@/lib/clone.functions";
-import {
-  buildZip,
-  formatHtml,
-  snippetHtml,
-  type CloneResult,
-  type CloneSelection,
-  type Target,
-} from "@/lib/export-zip";
+import { buildZip, type CloneResult, type CloneSelection, type Target } from "@/lib/export-zip";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -44,20 +49,12 @@ const TARGETS: { id: Target; label: string; hint: string }[] = [
 ];
 
 /**
- * Renders the clone inside an iframe with a REAL device viewport width
- * (1440px desktop / 390px mobile) scaled down to fit the preview card.
- * Without this, a narrow preview frame shrinks the layout below its native
- * breakpoints — sections and cards end up cramped ("mepet").
- */
-const DEVICE_WIDTHS = { desktop: 1440, mobile: 390 } as const;
-
-/**
  * Picker logic that runs directly on the preview iframe's document (same-origin,
  * so the parent can attach capture-phase listeners without injecting a script).
- * Mode "element": picks the exact element under the cursor — or, if that leaf
+ * Mode "element": picks the exact element under the cursor ΓÇö or, if that leaf
  * has no id/class, the deepest ancestor that does. Shift+click walks further up
  * to the largest labelled ancestor. Mode "section": picks the nearest semantic
- * block (section/header/footer/…). Hover outlines the element that will be
+ * block (section/header/footer/ΓÇª). Hover outlines the element that will be
  * picked; element mode also inlines the element's computed layout + wraps it in
  * the parent's flex/grid context so the downloaded piece keeps its preview size
  * and centering. Returns an uninstall function.
@@ -86,7 +83,7 @@ function installPicker(
     let node: Element | null = el;
     // Framer/Webflow component trees nest dozens of levels deep; a 10-level
     // walk gave up and fell back to a tiny labeled fragment (no images, no
-    // animations) even though a <section> was further up — the exported ZIP
+    // animations) even though a <section> was further up ΓÇö the exported ZIP
     // then looked "broken". Walk far enough to always escape the component.
     for (let i = 0; i < 80 && isRoot(node); i++) {
       if (node!.matches && node!.matches(SECTION_SEL)) return node!;
@@ -105,7 +102,7 @@ function installPicker(
   };
   // Clicking inside a running marquee resolves to the text inside one item.
   // The text ITSELF drifts with the track, so "is the target moving?" can't
-  // decide anything — instead always look for a qualified MOVING ANCESTOR:
+  // decide anything ΓÇö instead always look for a qualified MOVING ANCESTOR:
   // steady drift across two intervals, >= 3 element children (repeated
   // items of a track), bounded size, not a page-level tag. If one exists,
   // grow the selection to it so the exported piece contains the looping
@@ -247,12 +244,12 @@ function installPicker(
   const SKIP_VALUES = new Set(["auto", "none", "static", "normal", "visible", ""]);
   // Selectors whose rules size boxes in viewport units. The app renders the
   // preview iframe scaled via transform, which inflates 100vh (a 700px-tall
-  // panel reports ~935px) — baking that computed pixel value froze sections
+  // panel reports ~935px) ΓÇö baking that computed pixel value froze sections
   // at the wrong height once exported. Such boxes stay responsive instead:
   // the copied stylesheet rule keeps applying in the clone. Same for every
   // VERTICAL prop (top/margins/paddings): baked px from the tall iframe
   // shifted whole content blocks once the user opened the file in their own
-  // (shorter) window — the full-page ZIP never had this problem because the
+  // (shorter) window ΓÇö the full-page ZIP never had this problem because the
   // site's scripts recompute layout at the real viewport.
   type VpRule = { sel: string; props: Set<string> };
   const VP_VERT = new Set([
@@ -322,7 +319,7 @@ function installPicker(
   const inlineComputed = (el: Element, extra: string[] = []): string => {
     const cs = getComputedStyle(el);
     // A border with zero width on every side means the color/style props are
-    // default noise — skip the whole border group for such elements.
+    // default noise ΓÇö skip the whole border group for such elements.
     const hasBorder =
       cs.getPropertyValue("border-top-width") !== "0px" ||
       cs.getPropertyValue("border-left-width") !== "0px";
@@ -336,15 +333,15 @@ function installPicker(
       // Don't inline "no background" or resolved-transparent colors.
       if (p === "backgroundColor" && (v === "rgba(0, 0, 0, 0)" || v === "transparent")) continue;
       // Only inline gradients; url() images resolve to proxy URLs / data URIs
-      // that are huge or broken outside the preview — let the site's CSS (kept
+      // that are huge or broken outside the preview ΓÇö let the site's CSS (kept
       // in the ZIP) handle image backgrounds.
       if (p === "backgroundImage" && v.includes("url(")) continue;
       if (p === "opacity" && v === "1") continue;
       // Zero-width borders make color/style props default noise, but radius is
-      // independent of borders — photos rounded via inherit/class chains lose
+      // independent of borders ΓÇö photos rounded via inherit/class chains lose
       // their radius if it's skipped here.
       if ((p.endsWith("Color") || p === "borderStyle") && !hasBorder) continue;
-      // Viewport-sized vertical props keep their unit (see sizedByViewport) —
+      // Viewport-sized vertical props keep their unit (see sizedByViewport) ΓÇö
       // the capture viewport is the app's scaled iframe, not the user's window.
       const kebab = camelToKebab(p);
       if (VP_VERT.has(kebab)) {
@@ -354,7 +351,7 @@ function installPicker(
         } catch {
           /* SVG etc. */
         }
-        // Inline vh/vw values are preserved verbatim ("height: 100vh") —
+        // Inline vh/vw values are preserved verbatim ("height: 100vh") ΓÇö
         // dropping them made sections fall back to smaller stylesheet
         // min-heights; baking computed px froze them at iframe height.
         if (VP_UNIT_RE.test(spec)) {
@@ -377,7 +374,7 @@ function installPicker(
     /^(H[1-6]|P|SPAN|A|LI|DT|DD|BLOCKQUOTE|FIGCAPTION|BUTTON|LABEL)$/i.test(el.tagName);
   // Rules gated on classes living OUTSIDE the capture root (html/body-level
   // state like ".loaded .x { transform: scale(1) }") keep matching their base
-  // branch in the export — the gate class is gone, so pre-load states
+  // branch in the export ΓÇö the gate class is gone, so pre-load states
   // (scale/opacity offsets) stick forever and shift elements. For elements a
   // gated rule targets, the current computed values are materialized inline,
   // overriding whatever stale branch the exported CSS would pick.
@@ -387,7 +384,7 @@ function installPicker(
   const gateExtra = new Set<string>();
   // Structural ancestor classes (wrappers between the pick and <body>) are
   // re-created on the export wrapper so descendant rules like
-  // ".framer-V7F88 .framer-15cgbio { height: 100vh }" match again — without
+  // ".framer-V7F88 .framer-15cgbio { height: 100vh }" match again ΓÇö without
   // them the section lost its viewport height and collapsed to min-height.
   const contextClasses = new Set<string>();
   const gateSelectorRules = (): { sel: string; props: string[] }[] => {
@@ -465,12 +462,12 @@ function installPicker(
     const gated = gateSelectorRules();
     for (const [k, c] of pairs) {
       const l = nodes[k];
-      // A node replaced by the site mid-capture is detached — its computed
+      // A node replaced by the site mid-capture is detached ΓÇö its computed
       // style would be garbage defaults, so skip it.
       if (!l || !l.isConnected) continue;
       const own = c.getAttribute("style") || "";
       const comp = inlineComputed(l, needsTypo(l) ? TYPO_PROPS : []);
-      // Materialize out-of-root gated state (defaults included — transform
+      // Materialize out-of-root gated state (defaults included ΓÇö transform
       // "none" must still override a stale pre-load scale in the export).
       let extra = "";
       for (const g of gated) {
@@ -504,10 +501,10 @@ function installPicker(
   // JS-driven animations (Framer variants, GSAP/motion) set styles via inline
   // style updates that are lost when only the static HTML is cloned. Two
   // techniques bring them back as pure CSS:
-  //   hover  — simulate mouseover/mouseout, diff computed styles, emit scoped
+  //   hover  ΓÇö simulate mouseover/mouseout, diff computed styles, emit scoped
   //            `:hover` rules (pure-CSS hover already survives via the site's
   //            retained stylesheets).
-  //   scroll — sample animated props across scroll positions, emit @keyframes
+  //   scroll ΓÇö sample animated props across scroll positions, emit @keyframes
   //            driven by `animation-timeline: scroll()` (GSAP/ScrollTrigger
   //            entrance + scrub replays as a CSS scroll timeline).
   const ANIM_PROPS = [
@@ -571,7 +568,7 @@ function installPicker(
     el.dispatchEvent(new PointerEvent("pointerleave", { bubbles: false }));
   };
   // Hover replay: only visual props survive as :hover rules. Layout props
-  // (height/width/position/… ) captured mid-layout-shift are artifacts that
+  // (height/width/position/ΓÇª ) captured mid-layout-shift are artifacts that
   // the frozen inline layout (min-height etc.) won't honor faithfully.
   const HOVER_PROPS = [
     "transform",
@@ -588,7 +585,7 @@ function installPicker(
   ];
   const HOVER_IDX = HOVER_PROPS.map((p) => ANIM_PROPS.indexOf(p));
   const OP_IDX = ANIM_PROPS.indexOf("opacity");
-  // JS-driven continuous animations (GSAP/motion rAF loops — e.g. a rotating
+  // JS-driven continuous animations (GSAP/motion rAF loops ΓÇö e.g. a rotating
   // photo ring) never appear in getAnimations(), and their per-frame inline
   // transform gets frozen mid-angle in the clone ("vertical became
   // horizontal"). Sample transforms twice: an element rotating at constant
@@ -657,7 +654,7 @@ function installPicker(
         }
         a.finish();
       } catch {
-        /* finish() can throw on drives already released — ignore */
+        /* finish() can throw on drives already released ΓÇö ignore */
       }
     }
     await tick();
@@ -693,7 +690,7 @@ function installPicker(
         // Linear translation drift (Framer Ticker marquees: rAF writes
         // translateX inline every frame, so no WAAPI/CSS animation exists to
         // copy). Require the drift to repeat consistently across a second
-        // interval — one-off transitions don't pass. Then rebuild it as an
+        // interval ΓÇö one-off transitions don't pass. Then rebuild it as an
         // infinite CSS marquee stepping exactly one repeated child (item +
         // gap), which loops seamlessly.
         const dx0 = m1[4]! - m0[4]!;
@@ -765,7 +762,7 @@ function installPicker(
       noHover.remove();
     }
   };
-  // Continuous animations that DO exist as Web Animations API objects —
+  // Continuous animations that DO exist as Web Animations API objects ΓÇö
   // marquees/pulses driven by element.animate() with infinite iterations
   // (GSAP-style loops on non-Framer sites). Their keyframes are exact, so
   // they can be copied verbatim instead of reconstructed from drift. CSS
@@ -803,7 +800,7 @@ function installPicker(
         let ok = true;
         for (const kf of eff.getKeyframes()) {
           // Keyframes created via element.animate() usually omit explicit
-          // offsets — computedOffset carries the resolved 0..1 position.
+          // offsets ΓÇö computedOffset carries the resolved 0..1 position.
           const rawOff = kf.computedOffset ?? kf.offset ?? 0;
           const off = Math.round(rawOff * 1000) / 1000;
           if (seenOffsets.has(off)) continue;
@@ -834,7 +831,7 @@ function installPicker(
         );
         animated.add(i);
       } catch {
-        /* unreadable animation — skip */
+        /* unreadable animation ΓÇö skip */
       }
     }
     return { rules, animated };
@@ -855,7 +852,7 @@ function installPicker(
     // need the real trigger or the emitted :hover rule can never fire.
     const out = new Map<number, { trig: number; props: Map<string, string> }>();
     // Hover effects (Framer variants, group-hover dimming) act on the hovered
-    // node, its siblings and ancestors — diffing just that neighborhood keeps
+    // node, its siblings and ancestors ΓÇö diffing just that neighborhood keeps
     // the sweep affordable on big subtrees (a full re-read of every node per
     // hover made large sections take minutes and time out the pick).
     const scopeOf = (idx: number): number[] => {
@@ -885,9 +882,9 @@ function installPicker(
       });
       for (let k = 0; k < scope.length; k++) {
         const j = scope[k]!;
-        // Time-driven spinners contaminate every diff with drift — excluded.
+        // Time-driven spinners contaminate every diff with drift ΓÇö excluded.
         if (skip?.has(j)) continue;
-        // Skip elements that are invisible (opacity < 0.5) at baseline —
+        // Skip elements that are invisible (opacity < 0.5) at baseline ΓÇö
         // their "hover delta" is really a group-hover dim/blur artifact
         // that per-element :hover rules can't replay faithfully.
         const baseOpacity = parseFloat(base[j]![OP_IDX]!);
@@ -923,7 +920,7 @@ function installPicker(
     if (end - start < 200) return new Map();
     // Each sample is tagged with the root's VIEW progress (0 = entering the
     // viewport, 1 = leaving). The clone replays the animation against a
-    // view-timeline on #cp-root — scroll(root) progress would be meaningless
+    // view-timeline on #cp-root ΓÇö scroll(root) progress would be meaningless
     // in a standalone export whose page is only as tall as the section.
     const docY = box.top + orig;
     const vh = scroller.clientHeight;
@@ -954,7 +951,7 @@ function installPicker(
       // entirely: with no scroll room in a standalone export they would have
       // frozen invisible. The standalone runway now provides scroll room and
       // the prog mapping mirrors the live scroll position, so they replay as
-      // scroll-driven fades — this is where most of a section's visible
+      // scroll-driven fades ΓÇö this is where most of a section's visible
       // motion lives. Only skip elements still hidden at the END of the
       // range (states never meant to be seen, e.g. headers faded out while
       // scrolling away).
@@ -1003,7 +1000,7 @@ function installPicker(
         rules.push(e);
       }
       if (h && h.props.size) {
-        // Skip hover states that hide the element (group-hover dimming) — the
+        // Skip hover states that hide the element (group-hover dimming) ΓÇö the
         // captured "hovered" look must stay visible to be a usable :hover rule.
         const hOpacity = h.props.get("opacity");
         if (!hOpacity || parseFloat(hOpacity) >= 0.5) {
@@ -1022,7 +1019,7 @@ function installPicker(
             rules.push(`#cp-root .cp-h${i}:hover { ${st.join(" ")} }`);
           } else {
             // The change fires when a DIFFERENT element (ancestor card, sibling
-            // link) is hovered — tag the real trigger and target both.
+            // link) is hovered ΓÇö tag the real trigger and target both.
             const tc = pairs.get(h.trig);
             if (tc) {
               tc.classList.add("cp-g" + h.trig);
@@ -1045,7 +1042,7 @@ function installPicker(
         let lastPct = -1;
         for (let k = 0; k < N; k++) {
           const pct = Math.round(s.prog[k]! * 100);
-          // Clamped tails collapse onto the same percentage — keep the first.
+          // Clamped tails collapse onto the same percentage ΓÇö keep the first.
           if (pct === lastPct) continue;
           lastPct = pct;
           const props: string[] = [];
@@ -1067,7 +1064,7 @@ function installPicker(
         // so a freshly opened file visibly animates in. The micro-script
         // adds .cp-go when the element first intersects the viewport, so
         // above-fold content plays its intro on load while deeper elements
-        // reveal on scroll — mirroring the source behavior. The intro is
+        // reveal on scroll ΓÇö mirroring the source behavior. The intro is
         // listed AFTER the scrub animation (last animation wins shared
         // props while active) with timelines mapped index-wise.
         const r0 = s.rows[0]!;
@@ -1176,7 +1173,7 @@ function installPicker(
   // a hidden container at the top of the clone.
   // Relative link hrefs (./projects, /about) resolve against the export's own
   // location and 404. Rebase them onto the original site so the clone stays
-  // navigable — canonical/og:url carry the real origin even behind the proxy.
+  // navigable ΓÇö canonical/og:url carry the real origin even behind the proxy.
   const absolutizeLinks = (clone: HTMLElement) => {
     let base: string | null = null;
     try {
@@ -1200,7 +1197,7 @@ function installPicker(
       try {
         a.setAttribute("href", new URL(href, base).href);
       } catch {
-        /* unparseable href — leave as-is */
+        /* unparseable href ΓÇö leave as-is */
       }
     }
   };
@@ -1255,7 +1252,7 @@ function installPicker(
     contextClasses.clear();
     for (let a = el.parentElement; a && a !== doc.documentElement; a = a.parentElement) {
       for (const c of Array.from(a.classList)) gateExtra.add(c);
-      // html/body classes are handled by gate materialization instead —
+      // html/body classes are handled by gate materialization instead ΓÇö
       // body-level classes (custom cursors, scroll locks) must not style the
       // export wrapper.
       if (a !== doc.body) {
@@ -1267,14 +1264,14 @@ function installPicker(
     // final live/clone pairing walk. Marking the live nodes up-front makes the
     // pairing mutation-proof: scroll scenes can add/remove nodes during the
     // async sampling, which silently desynced positional walks (styles landing
-    // on the wrong element — lost radii, display:contents reverted, shifted
+    // on the wrong element ΓÇö lost radii, display:contents reverted, shifted
     // headers).
     const nodes = flatNodes(el);
     const MARK = "data-cp-i";
     nodes.forEach((n, i) => n.setAttribute(MARK, String(i)));
     capturing = true;
     doc.documentElement.classList.add("clone-capturing");
-    prog(10, "Menganalisis struktur…");
+    prog(10, "Menganalisis strukturΓÇª");
     let hover: Map<number, { trig: number; props: Map<string, string> }> = new Map();
     let scroll: Map<number, { rows: string[][]; prog: number[] }> = new Map();
     let time = { rules: new Map<number, string>(), animated: new Set<number>() };
@@ -1282,24 +1279,24 @@ function installPicker(
     let styles = "";
     let entrance: Map<number, string> = new Map();
     try {
-      prog(18, "Menangkap animasi masuk…");
+      prog(18, "Menangkap animasi masukΓÇª");
       entrance = await captureEntranceAnimations(nodes);
       // rAF-driven marquees (Framer Ticker) pause while off-screen, and the
-      // entrance pass can leave the viewport elsewhere — bring the section
+      // entrance pass can leave the viewport elsewhere ΓÇö bring the section
       // back into view so continuous animations are actually running when
       // their drift gets sampled.
       el.scrollIntoView({ block: "center" });
       await new Promise((r) => setTimeout(r, 400));
-      prog(38, "Menangkap animasi berjalan (marquee/spinner)…");
+      prog(38, "Menangkap animasi berjalan (marquee/spinner)ΓÇª");
       time = await captureTimeAnimations(nodes);
       const waapi = await captureWAAPIInfinite(nodes);
       for (const [wi, wr] of waapi.rules) {
         if (!time.rules.has(wi)) time.rules.set(wi, wr);
       }
       for (const wi of waapi.animated) time.animated.add(wi);
-      prog(52, "Menangkap efek hover…");
+      prog(52, "Menangkap efek hoverΓÇª");
       hover = await captureHoverStyles(el, nodes, time.animated);
-      prog(66, "Menangkap animasi scroll…");
+      prog(66, "Menangkap animasi scrollΓÇª");
       scroll = await captureScrollAnimations(el, nodes, time.animated);
       // Take the snapshot while still guarding the picker handlers: after the
       // scroll sweep Chrome synthesizes mouse events under the parked cursor,
@@ -1311,7 +1308,7 @@ function installPicker(
       // Wait out async settling before snapshotting: React commits from the
       // scroll scenes, JS-driven reveals (GSAP/rAF inline writes) AND class-
       // gated CSS transitions (e.g. ".loaded .x { transform: scale(1) }" with
-      // multi-second delays — invisible to inline-style diffs). Baking a
+      // multi-second delays ΓÇö invisible to inline-style diffs). Baking a
       // mid-transition frame froze elements scaled/offset ("positions not
       // tidy"). Signature uses COMPUTED transform/opacity; time-driven
       // spinners are excluded or it would never settle.
@@ -1341,7 +1338,7 @@ function installPicker(
       };
       let prevKey = "";
       let stableRounds = 0;
-      prog(80, "Menunggu animasi stabil…");
+      prog(80, "Menunggu animasi stabilΓÇª");
       for (let i = 0; i < 18 && stableRounds < 2; i++) {
         await new Promise((r) => setTimeout(r, 250));
         const act = activeAnims();
@@ -1368,7 +1365,7 @@ function installPicker(
       };
       assign(clone);
       for (const n of nodes) n.removeAttribute(MARK);
-      prog(92, "Merakit CSS & snapshot DOM…");
+      prog(92, "Merakit CSS & snapshot DOMΓÇª");
       inlineTreeMarked(nodes, pairs);
       // Videos: Framer writes a source URL WITHOUT the file extension into
       // the src attribute; its runtime resolves the real media URL into the
@@ -1379,7 +1376,7 @@ function installPicker(
       // muted + playsinline, played/paused by viewport observers) versus
       // click-to-play players (poster shown, sound allowed, waits for a
       // click). Forcing autoplay on both made player clips start silently
-      // moving on open — the export's micro-script reads data-cp-clickplay
+      // moving on open ΓÇö the export's micro-script reads data-cp-clickplay
       // and wires the same click interaction instead.
       for (let k = 0; k < nodes.length; k++) {
         const live = nodes[k]!;
@@ -1405,14 +1402,14 @@ function installPicker(
           if (!c.hasAttribute("playsinline")) c.setAttribute("playsinline", "");
         } else {
           // The live DOM may have gained an autoplay attribute when the
-          // site's own logic triggered the clip during capture — strip it so
+          // site's own logic triggered the clip during capture ΓÇö strip it so
           // a player clip never starts by itself.
           c.removeAttribute("autoplay");
           c.setAttribute("data-cp-clickplay", "");
         }
       }
       // First-seen pre-reveal states recorded by the preview's bootstrap
-      // script (see CP_PRESTATE_SCRIPT) — lets the export replay entrances
+      // script (see CP_PRESTATE_SCRIPT) ΓÇö lets the export replay entrances
       // that already finished before the pick started.
       const preState = (
         doc.defaultView as {
@@ -1420,7 +1417,7 @@ function installPicker(
         } | null
       )?.__cpPre;
       styles = applyAnimStyles(nodes, pairs, hover, scroll, time.rules, entrance, preState).trim();
-      // Must run AFTER the pairing walks above — inserting the sprite
+      // Must run AFTER the pairing walks above ΓÇö inserting the sprite
       // container earlier would add an unmarked child mid-walk.
       copySvgDefs(clone);
       absolutizeLinks(clone);
@@ -1446,7 +1443,7 @@ function installPicker(
     if (eff) st += `background-color:${eff};`;
     // Context classes go on an inner display:contents wrapper: descendant
     // rules like ".framer-V7F88 .framer-15cgbio" still match, but rules
-    // styling the context class ITSELF find no box to paint on — the outer
+    // styling the context class ITSELF find no box to paint on ΓÇö the outer
     // cp-root stays a neutral positioning parent.
     const ctx = Array.from(contextClasses).join(" ");
     const inner = ctx
@@ -1497,7 +1494,7 @@ function installPicker(
   };
   // Full-screen progress overlay shown while the capture runs. It is appended
   // to <html> (not <body>) so it stays visible even though the anti-glitch
-  // rule hides body during the capture's scroll jumps — the user sees a
+  // rule hides body during the capture's scroll jumps ΓÇö the user sees a
   // progress bar instead of a blank preview.
   const showCaptureProgress = () => {
     const root = doc.createElement("div");
@@ -1523,12 +1520,12 @@ function installPicker(
         "animation:cp-spin .8s linear infinite;flex:none;",
     );
     const title = doc.createElement("div");
-    title.textContent = "Menangkap pilihan…";
+    title.textContent = "Menangkap pilihanΓÇª";
     title.setAttribute("style", "font-size:14px;font-weight:600;color:#f9fafb;");
     head.appendChild(spin);
     head.appendChild(title);
     const status = doc.createElement("div");
-    status.textContent = "Bersiap…";
+    status.textContent = "BersiapΓÇª";
     status.setAttribute("style", "font-size:12.5px;color:#9ca3af;margin-top:8px;min-height:17px;");
     const track = doc.createElement("div");
     track.setAttribute(
@@ -1663,139 +1660,18 @@ function installPicker(
 
 export type PickMode = "element" | "section";
 
-function DeviceFrame({
-  device,
-  previewId,
-  pickMode,
-  srcOverride,
-  onPick,
-  onCancel,
-}: {
-  device: "desktop" | "mobile";
-  previewId: string;
-  pickMode: PickMode | null;
-  /** When set (snippet preview after a pick), the iframe shows this instead of the full page. */
-  srcOverride?: string | null;
-  onPick: (sel: CloneSelection) => void;
-  onCancel: () => void;
-}) {
-  const base = DEVICE_WIDTHS[device];
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLIFrameElement>(null);
-  const [scale, setScale] = useState(1);
-  const [loadTick, setLoadTick] = useState(0);
-  // Real content height of the previewed page: the iframe is sized to fit it
-  // exactly instead of a fixed 70vh box that leaves dead space below shorter
-  // pages (most visible in desktop mode where the scale shrinks the frame).
-  const [contentH, setContentH] = useState<number | null>(null);
-
-  useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    let cancelled = false;
-    setContentH(null);
-    const measure = () => {
-      try {
-        const d = frame.contentDocument;
-        if (!d || !d.documentElement || cancelled) return;
-        const h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
-        if (h > 100) setContentH(h);
-      } catch {
-        /* cross-origin or not ready */
-      }
-    };
-    measure();
-    // Late loads (images, web fonts, layout-shifting reveals) change the page
-    // height — keep tracking it instead of measuring once. A ResizeObserver
-    // can't help here: <html>'s border box stays viewport-sized even when its
-    // scrollHeight grows, so poll briefly instead.
-    const iv = setInterval(measure, 700);
-    const stop = setTimeout(() => clearInterval(iv), 25000);
-    return () => {
-      cancelled = true;
-      clearInterval(iv);
-      clearTimeout(stop);
-    };
-  }, [previewId, loadTick, srcOverride]);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const update = () => setScale(Math.min(1, el.clientWidth / base));
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [base]);
-
-  // Enable/disable the sniper inside the iframe whenever pick mode, preview,
-  // device or load state changes. Attach the picker directly to the iframe's
-  // document — same-origin, so no script injection (which Vite's transform of a
-  // template-literal script string had corrupted) and no window globals needed.
-  useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const doc = frame.contentDocument;
-    if (!doc) return;
-    if (!pickMode) return;
-    if (srcOverride) return;
-    return installPicker(doc, pickMode, onPick, onCancel);
-  }, [pickMode, previewId, device, loadTick, srcOverride, onPick, onCancel]);
-
-  const heightVh = 70 / scale;
-  // Some sites' own runtimes (Lenis/Framer scroll transforms gone feral in
-  // the static preview) inflate scrollHeight to Chrome's 2^25px layout cap —
-  // clamp so the preview stays usable; anything taller just scrolls inside
-  // the frame as before.
-  const safeH = contentH ? Math.max(200, Math.min(contentH, 16000)) : null;
-  // The frame fits the page exactly when the page is shorter than a viewport
-  // band (no dead space below), and caps at that band for longer pages —
-  // those simply scroll inside the frame like before. Reserving the page's
-  // full height in the wrapper was tried and rejected: it turned the preview
-  // into a huge mostly-empty region.
-  const vhBand = typeof window !== "undefined" ? window.innerHeight * 0.7 : 700;
-  const frameCssH = safeH ? Math.round(Math.min(safeH, vhBand / scale)) : null;
-  const wrapHeight = frameCssH ? `${Math.round(frameCssH * scale)}px` : `${heightVh}vh`;
-  const frameHeight = frameCssH ? `${frameCssH}px` : `${heightVh}vh`;
-
-  const frameSrc = srcOverride ?? `/?preview=${previewId}`;
-  return (
-    <div ref={wrapRef} className="w-full" style={{ height: wrapHeight }}>
-      <iframe
-        ref={frameRef}
-        title="Preview hasil kloning"
-        src={frameSrc}
-        onLoad={() => setLoadTick((x) => x + 1)}
-        sandbox="allow-same-origin allow-scripts"
-        className="rounded-xl bg-white"
-        style={{
-          width: base,
-          height: frameHeight,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-        }}
-      />
-    </div>
-  );
-}
+type Stage = "idle" | "fetching" | "ready" | "error";
 
 function Index() {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState("https://amikompurwokerto.ac.id");
   const [result, setResult] = useState<CloneResult | null>(null);
-  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
-  const [targets, setTargets] = useState<Target[]>(["static", "vite", "next"]);
+  const [target, setTarget] = useState<Target>("static");
   const [pickMode, setPickMode] = useState<PickMode | null>(null);
   const [selection, setSelection] = useState<CloneSelection | null>(null);
   const [zipping, setZipping] = useState(false);
-  // After a successful pick, the preview iframe can show the exported snippet
-  // itself (what the ZIP will contain) instead of the full page — instant
-  // visual confirmation that the cut-out keeps its animations.
-  const [showSnippetView, setShowSnippetView] = useState(false);
-  const [snippetUrl, setSnippetUrl] = useState<string | null>(null);
-  // Bumping the nonce rebuilds the blob URL, which restarts every CSS
-  // animation from zero — entrance reveals only play once (~1.6s), so without
-  // a replay they look "dead" to anyone who looks after they settle.
-  const [snippetNonce, setSnippetNonce] = useState(0);
+  const [loadTick, setLoadTick] = useState(0);
+  const [frameKey, setFrameKey] = useState(0);
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const run = useServerFn(clonePage);
 
   const mutation = useMutation({
@@ -1804,42 +1680,57 @@ function Index() {
       setResult(data);
       setSelection(null);
       setPickMode(null);
-      setShowSnippetView(false);
+      setLoadTick(0);
+      setFrameKey(0);
       toast.success(`Berhasil mengkloning ${new URL(data.url).hostname}`);
     },
     onError: (e: Error) => toast.error(e.message || "Gagal mengambil halaman"),
   });
 
-  useEffect(() => {
-    if (!result || !selection) {
-      setSnippetUrl(null);
+  const startClone = () => {
+    if (!url.trim()) {
+      toast.error("Masukkan URL yang valid");
       return;
     }
-    const html = snippetHtml(result, formatHtml(selection.html), selection.styles);
-    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-    setSnippetUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [result, selection, snippetNonce]);
-
-  const toggle = (t: Target) =>
-    setTargets((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-
-  const startPick = (mode: PickMode) => {
-    setPickMode((cur) => (cur === mode ? null : mode));
-    setSelection(null);
-    // Picking needs the full page in the frame.
-    setShowSnippetView(false);
+    try {
+      new URL(url.trim());
+    } catch {
+      toast.error("Masukkan URL lengkap, termasuk https://");
+      return;
+    }
+    mutation.mutate(url.trim());
   };
+
+  const startPick = () => {
+    setPickMode((cur) => (cur === null ? "element" : null));
+    setSelection(null);
+  };
+
+  const onPick = useCallback((sel: CloneSelection) => {
+    setSelection(sel);
+    setPickMode(null);
+    toast.success(`${sel.label} dipilih`);
+  }, []);
+
+  const onCancel = useCallback(() => setPickMode(null), []);
+
+  // Sniper: attach the picker directly to the preview iframe's document
+  // (same-origin, re-attached whenever the frame reloads). Runs the SAME
+  // element/section + perfect-cut logic as before — no backend change.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    if (!pickMode) return;
+    return installPicker(doc, pickMode, onPick, onCancel);
+  }, [pickMode, result?.previewId, loadTick, onPick, onCancel]);
 
   const download = async () => {
     if (!result) return;
-    if (targets.length === 0) {
-      toast.error("Pilih minimal satu format");
-      return;
-    }
     setZipping(true);
     try {
-      const blob = await buildZip(result, targets, selection);
+      const blob = await buildZip(result, [target], selection);
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `${new URL(result.url).hostname.replace(/\W+/g, "-")}-clone.zip`;
@@ -1853,199 +1744,218 @@ function Index() {
     }
   };
 
+  const pending = mutation.isPending;
+  const hasError = mutation.isError;
+  const stage: Stage = hasError ? "error" : pending ? "fetching" : result ? "ready" : "idle";
+  const message = hasError
+    ? mutation.error instanceof Error
+      ? mutation.error.message
+      : "Failed to clone site"
+    : pending
+      ? "Fetching source document…"
+      : result
+        ? "Clone ready — preview and export share the same source"
+        : "Ready to clone";
+  const busy = pending;
+  const order = stage === "idle" ? -1 : stage === "fetching" ? 0 : stage === "ready" ? 3 : -1;
+  const pipeline = [
+    "Fetching document",
+    "Resolving runtime",
+    "Preparing preview",
+    "Ready to export",
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <Toaster />
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_0%,color-mix(in_oklch,var(--accent)_28%,transparent),transparent_55%)]" />
+      <header className="border-b border-border bg-shell">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 md:px-7">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Code2 aria-hidden="true" className="size-4" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold">WebCloner</h1>
+              <p className="text-xs text-muted-foreground">Fidelity-first exporter</p>
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+            <span className="size-2 rounded-full bg-success" />
+            Server fetch · No AI
+          </div>
+        </div>
+      </header>
 
-      <main className="relative mx-auto max-w-6xl px-6 py-14">
-        <header className="max-w-2xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-mono uppercase tracking-widest text-muted-foreground">
-            <Zap className="size-3.5" /> tanpa AI · murni fetch &amp; rewrite
-          </span>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">
-            Clone website jadi kode siap pakai
-          </h1>
-          <p className="mt-4 text-muted-foreground">
-            Tempel link, lihat preview dengan animasi scroll GSAP ScrollTrigger, lalu unduh ZIP
-            berisi versi HTML/CSS/JS, Vite, dan Next.js.
-          </p>
-        </header>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (url.trim()) mutation.mutate(url.trim());
-          }}
-          className="mt-10 flex flex-col gap-3 sm:flex-row"
-        >
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
-            <Globe className="size-4 shrink-0 text-muted-foreground" />
-            <input
+      <section className="border-b border-border bg-background px-4 py-4 md:px-7">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 lg:flex-row">
+          <div className="relative flex-1">
+            <ExternalLink className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              aria-label="Website URL"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://contoh-website.com"
-              className="w-full bg-transparent font-mono text-sm outline-none placeholder:text-muted-foreground"
+              onChange={(event) => setUrl(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && startClone()}
+              className="h-11 pl-10 font-mono"
             />
           </div>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            {mutation.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-            {mutation.isPending ? "Mengambil…" : "Clone sekarang"}
-          </button>
-        </form>
+          <Button onClick={startClone} disabled={busy} size="lg" className="h-11 min-w-32">
+            {busy ? <LoaderCircle className="animate-spin" /> : <ScanSearch />}Clone site
+          </Button>
+        </div>
+      </section>
 
-        {result ? (
-          <section className="mt-12">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="min-w-0 border-border lg:border-r">
+          <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2 md:px-6">
+            <div className="flex items-center gap-3">
+              <span
+                className={`size-2 rounded-full ${stage === "error" ? "bg-destructive" : stage === "ready" ? "bg-success" : busy ? "animate-pulse bg-warning" : "bg-muted-foreground"}`}
+              />
               <div>
-                <h2 className="text-lg font-semibold">{result.title}</h2>
-                <p className="font-mono text-xs text-muted-foreground">
-                  {result.url} · {result.stylesheets} stylesheet · {result.assets.length} aset ·{" "}
-                  {result.scripts?.length ?? 0} script asli
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => startPick("element")}
-                  aria-label="Pilih elemen di preview"
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${pickMode === "element" ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground hover:bg-accent"}`}
-                >
-                  <Scissors className="size-4" />
-                  {pickMode === "element" ? "Mengambil elemen…" : "Pilih elemen"}
-                </button>
-                <button
-                  onClick={() => startPick("section")}
-                  aria-label="Pilih section di preview"
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${pickMode === "section" ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground hover:bg-accent"}`}
-                >
-                  <Rows3 className="size-4" />
-                  {pickMode === "section" ? "Mengambil section…" : "Pilih section"}
-                </button>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {DEVICE_WIDTHS[device]}px
-                </span>
-                <div className="flex items-center gap-1 rounded-lg border border-border p-1">
-                  <button
-                    onClick={() => setDevice("desktop")}
-                    aria-label="Preview desktop"
-                    className={`rounded-md p-2 ${device === "desktop" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
-                  >
-                    <Monitor className="size-4" />
-                  </button>
-                  <button
-                    onClick={() => setDevice("mobile")}
-                    aria-label="Preview mobile"
-                    className={`rounded-md p-2 ${device === "mobile" ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}
-                  >
-                    <Smartphone className="size-4" />
-                  </button>
-                </div>
+                <p className="text-sm font-medium">{message}</p>
+                {result?.url ? (
+                  <p className="max-w-[50vw] truncate text-xs text-muted-foreground">
+                    {result.url}
+                  </p>
+                ) : null}
               </div>
             </div>
+            <div className="flex gap-2">
+              <Button
+                variant={pickMode ? "default" : "outline"}
+                size="sm"
+                disabled={!result}
+                onClick={startPick}
+              >
+                <MousePointer2 />
+                {pickMode ? "Selecting" : "Select"}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Reload preview"
+                disabled={!result || busy}
+                onClick={() => {
+                  setFrameKey((k) => k + 1);
+                  setLoadTick((t) => t + 1);
+                }}
+              >
+                <RefreshCw />
+              </Button>
+            </div>
+          </div>
 
-            <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-card p-3">
-              {result.previewId ? (
-                <DeviceFrame
-                  device={device}
-                  previewId={result.previewId}
-                  pickMode={pickMode}
-                  srcOverride={showSnippetView && snippetUrl ? snippetUrl : null}
-                  onPick={(sel) => {
-                    setSelection(sel);
-                    setPickMode(null);
-                    setShowSnippetView(true);
-                    toast.success(`${sel.label} dipilih`);
-                  }}
-                  onCancel={() => setPickMode(null)}
+          <div className="preview-grid min-h-[680px] p-3 md:p-5">
+            <div className="overflow-hidden rounded-lg border border-preview-border bg-preview shadow-preview">
+              <div className="flex h-10 items-center gap-2 border-b border-preview-border bg-preview-bar px-3">
+                <span className="size-2.5 rounded-full bg-window-red" />
+                <span className="size-2.5 rounded-full bg-window-yellow" />
+                <span className="size-2.5 rounded-full bg-window-green" />
+                <span className="ml-3 flex-1 truncate rounded bg-preview-address px-3 py-1 text-center text-[11px] text-muted-foreground">
+                  {result?.url || "Preview will appear here"}
+                </span>
+              </div>
+              {result?.previewId ? (
+                <iframe
+                  ref={frameRef}
+                  key={`${result.previewId}-${frameKey}`}
+                  title="Cloned website preview"
+                  src={`/api/preview/${result.previewId}`}
+                  onLoad={() => setLoadTick((t) => t + 1)}
+                  className="h-[720px] w-full bg-preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
                 />
-              ) : null}
+              ) : (
+                <div className="flex h-[720px] flex-col items-center justify-center gap-4 text-center">
+                  <div className="flex size-14 items-center justify-center rounded-lg border border-border bg-secondary">
+                    <ScanSearch className="size-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Enter a public website URL</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      The processed clone—not the original URL—appears here.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+        </section>
 
-            {pickMode ? (
-              <p className="mt-3 font-mono text-xs text-muted-foreground">
-                {pickMode === "section"
-                  ? "Klik area mana pun dalam section pada preview; section terdekat akan dipilih. Arahkan mouse untuk melihat sorotan. Tekan Esc untuk batal."
-                  : "Klik elemen pada preview untuk memilihnya persis (tanpa ancestor berlebih). Shift+klik untuk memperluas ke section terbesar. Tekan Esc untuk batal."}
-              </p>
-            ) : null}
-
-            {selection ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2">
-                <Scissors className="size-4 text-emerald-500" />
-                <span className="font-mono text-xs">
-                  ZIP akan berisi: <span className="font-semibold">{selection.label}</span>
-                </span>
-                {snippetUrl ? (
+        <aside className="bg-panel p-5 lg:min-h-[820px]">
+          <div className="space-y-7">
+            <section>
+              <p className="panel-label">Export target</p>
+              <div className="mt-3 grid grid-cols-3 gap-1 rounded-lg border border-border bg-background p-1">
+                {(["static", "vite", "next"] as Target[]).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setTarget(item)}
+                    className={`rounded-md px-2 py-2 text-xs font-medium transition-colors ${target === item ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"}`}
+                  >
+                    {item === "static" ? "HTML" : item === "vite" ? "Vite" : "Next.js"}
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section>
+              <p className="panel-label">Selection</p>
+              <div className="mt-3 rounded-lg border border-border bg-background p-3">
+                {selection ? (
                   <>
-                    <button
-                      onClick={() => setShowSnippetView((v) => !v)}
-                      className="ml-auto font-mono text-xs underline underline-offset-2 hover:opacity-80"
-                    >
-                      {showSnippetView ? "lihat halaman penuh" : "preview potongan"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSnippetNonce((n) => n + 1);
-                        setShowSnippetView(true);
-                      }}
-                      className="font-mono text-xs underline underline-offset-2 hover:opacity-80"
-                    >
-                      putar ulang animasi
-                    </button>
+                    <div className="flex items-start gap-2">
+                      <Check className="mt-0.5 size-4 text-success" />
+                      <p className="min-w-0 break-words text-sm font-medium">
+                        {selection.label || "Selected element"}
+                      </p>
+                    </div>
+                    <code className="mt-2 block break-all text-[10px] leading-relaxed text-muted-foreground">
+                      {selection.html ? selection.html.slice(0, 120) : "full page"}
+                    </code>
                   </>
                 ) : (
-                  <span className="ml-auto" />
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Enable Select, then click an element inside the preview. Without a selection,
+                    the full site is exported.
+                  </p>
                 )}
-                <button
-                  onClick={() => setSelection(null)}
-                  className="font-mono text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                >
-                  batal
-                </button>
               </div>
-            ) : null}
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {TARGETS.map((t) => {
-                const on = targets.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => toggle(t.id)}
-                    className={`rounded-xl border p-4 text-left transition-colors ${on ? "border-primary bg-accent" : "border-border bg-card"}`}
-                  >
-                    <p className="text-sm font-medium">{t.label}</p>
-                    <p className="mt-1 font-mono text-xs text-muted-foreground">{t.hint}</p>
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={download}
-              disabled={zipping}
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {zipping ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4" />
-              )}
-              {selection ? "Download elemen/section terpilih" : "Download ZIP"}
-            </button>
-          </section>
-        ) : (
-          <p className="mt-12 max-w-xl font-mono text-xs leading-relaxed text-muted-foreground">
-            Catatan: kloning bersifat statis, tapi skrip asli situs (GSAP, ScrollTrigger, parallax,
-            running text, SVG draw) ikut dipertahankan agar animasi scroll berjalan persis. Sisipan
-            GSAP bawaan hanya jadi cadangan bila situs tidak punya animasi sendiri.
-          </p>
-        )}
-      </main>
-    </div>
+            </section>
+            <section>
+              <p className="panel-label">Pipeline</p>
+              <ol className="mt-3 space-y-3">
+                {pipeline.map((label, index) => (
+                  <li key={label} className="flex items-center gap-3 text-xs">
+                    <span
+                      className={`flex size-5 items-center justify-center rounded-full border ${index <= order ? "border-success bg-success text-success-foreground" : "border-border text-muted-foreground"}`}
+                    >
+                      {index < order ? <Check className="size-3" /> : index + 1}
+                    </span>
+                    <span className={index <= order ? "text-foreground" : "text-muted-foreground"}>
+                      {label}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+            <section className="border-t border-border pt-5">
+              <Button onClick={download} disabled={!result || zipping} className="h-11 w-full">
+                {zipping ? <LoaderCircle className="animate-spin" /> : <Download />}Download{" "}
+                {target === "static" ? "Static HTML" : target === "vite" ? "Vite React" : "Next.js"}{" "}
+                ZIP
+              </Button>
+              <button
+                type="button"
+                className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground"
+                aria-label="Show export details"
+              >
+                Fidelity runtime preserved <ChevronDown className="size-3" />
+              </button>
+            </section>
+          </div>
+        </aside>
+      </div>
+    </main>
   );
 }
