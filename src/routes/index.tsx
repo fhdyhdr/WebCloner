@@ -1663,7 +1663,7 @@ export type PickMode = "element" | "section";
 type Stage = "idle" | "fetching" | "ready" | "error";
 
 function Index() {
-  const [url, setUrl] = useState("https://amikompurwokerto.ac.id");
+  const [url, setUrl] = useState("https://shinta.framer.media");
   const [result, setResult] = useState<CloneResult | null>(null);
   const [target, setTarget] = useState<Target>("static");
   const [pickMode, setPickMode] = useState<PickMode | null>(null);
